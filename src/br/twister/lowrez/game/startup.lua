@@ -1,47 +1,49 @@
 function startup:on_preload()
+	local res = "res://br/twister/lowrez/game/res/"
+
 	Globals.setProperty("font", {
-		Bitmap("res://br/twister/lowrez/game/font.png"),
+		Bitmap(res.."font.png"),
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,;:!?[]+-*/\\=_\"'#$&%()"
 	})
 	Globals.setProperty("numbersFont", {
-		Bitmap("res://br/twister/lowrez/game/numbers.png"),
+		Bitmap(res.."numbers.png"),
 		"0123456789:+-.'ABCDEFGHIJKLMNOPQRSTUVWXYZ][|"
 	})
-	Globals.setProperty("tileSet", Bitmap("res://br/twister/lowrez/game/tiles.png"))
-	Globals.setProperty("wormSprite", Bitmap("res://br/twister/lowrez/game/worm.png"))
-	Globals.setProperty("wormSkelSprite", Bitmap("res://br/twister/lowrez/game/wormSkel.png"))
-	Globals.setProperty("badWormSprite", Bitmap("res://br/twister/lowrez/game/badWorm.png"))
-	Globals.setProperty("poweredWormSprite", Bitmap("res://br/twister/lowrez/game/poweredWorm.png"))
-	Globals.setProperty("burntWormSprite", Bitmap("res://br/twister/lowrez/game/burntWorm.png"))
-	Globals.setProperty("explosionSprite", Bitmap("res://br/twister/lowrez/game/explosion.png"))
+	Globals.setProperty("tileSet", Bitmap(res.."tiles.png"))
+	Globals.setProperty("wormSprite", Bitmap(res.."worm.png"))
+	Globals.setProperty("wormSkelSprite", Bitmap(res.."wormSkel.png"))
+	Globals.setProperty("badWormSprite", Bitmap(res.."badWorm.png"))
+	Globals.setProperty("poweredWormSprite", Bitmap(res.."poweredWorm.png"))
+	Globals.setProperty("burntWormSprite", Bitmap(res.."burntWorm.png"))
+	Globals.setProperty("explosionSprite", Bitmap(res.."explosion.png"))
 	
-	Globals.setProperty("appleSprite", Bitmap("res://br/twister/lowrez/game/apple.png"))
-	Globals.setProperty("pearSprite", Bitmap("res://br/twister/lowrez/game/pear.png"))
-	Globals.setProperty("cherrySprite", Bitmap("res://br/twister/lowrez/game/cherry.png"))
-	Globals.setProperty("healthSprite", Bitmap("res://br/twister/lowrez/game/health.png"))
-	Globals.setProperty("presentSprite", Bitmap("res://br/twister/lowrez/game/present.png"))
-	Globals.setProperty("batterySprite", Bitmap("res://br/twister/lowrez/game/battery.png"))
-	Globals.setProperty("bombSprite", Bitmap("res://br/twister/lowrez/game/bomb.png"))
+	Globals.setProperty("appleSprite", Bitmap(res.."apple.png"))
+	Globals.setProperty("pearSprite", Bitmap(res.."pear.png"))
+	Globals.setProperty("cherrySprite", Bitmap(res.."cherry.png"))
+	Globals.setProperty("healthSprite", Bitmap(res.."health.png"))
+	Globals.setProperty("presentSprite", Bitmap(res.."present.png"))
+	Globals.setProperty("batterySprite", Bitmap(res.."battery.png"))
+	Globals.setProperty("bombSprite", Bitmap(res.."bomb.png"))
 	
-	Globals.setProperty("appleSpriteRot", Bitmap("res://br/twister/lowrez/game/appleRot.png"))
-	Globals.setProperty("pearSpriteRot", Bitmap("res://br/twister/lowrez/game/pearRot.png"))
-	Globals.setProperty("cherrySpriteRot", Bitmap("res://br/twister/lowrez/game/cherryRot.png"))
+	Globals.setProperty("appleSpriteRot", Bitmap(res.."appleRot.png"))
+	Globals.setProperty("pearSpriteRot", Bitmap(res.."pearRot.png"))
+	Globals.setProperty("cherrySpriteRot", Bitmap(res.."cherryRot.png"))
 	
-	Globals.setProperty("titleSprite", Bitmap("res://br/twister/lowrez/game/title.png"))
+	Globals.setProperty("titleSprite", Bitmap(res.."title.png"))
 	
-	Globals.setProperty("upDown", Bitmap("res://br/twister/lowrez/game/upDown.png"))
+	Globals.setProperty("upDown", Bitmap(res.."upDown.png"))
 	
-	Globals.setProperty("selectSound", Audio.loadSound("res://br/twister/lowrez/game/select.wav"))
-	Globals.setProperty("pickupSound", Audio.loadSound("res://br/twister/lowrez/game/pickup.wav"))
-	Globals.setProperty("oneUpSound", Audio.loadSound("res://br/twister/lowrez/game/oneUp.wav"))
-	Globals.setProperty("hurtSound", Audio.loadSound("res://br/twister/lowrez/game/hurt.wav"))
-	Globals.setProperty("gameOverSound", Audio.loadSound("res://br/twister/lowrez/game/gameOver.wav"))
-	Globals.setProperty("shockSound", Audio.loadSound("res://br/twister/lowrez/game/shock.wav"))
-	Globals.setProperty("explodeSound", Audio.loadSound("res://br/twister/lowrez/game/explode.wav"))
+	Globals.setProperty("selectSound", Audio.loadSound(res.."select.wav"))
+	Globals.setProperty("pickupSound", Audio.loadSound(res.."pickup.wav"))
+	Globals.setProperty("oneUpSound", Audio.loadSound(res.."oneUp.wav"))
+	Globals.setProperty("hurtSound", Audio.loadSound(res.."hurt.wav"))
+	Globals.setProperty("gameOverSound", Audio.loadSound(res.."gameOver.wav"))
+	Globals.setProperty("shockSound", Audio.loadSound(res.."shock.wav"))
+	Globals.setProperty("explodeSound", Audio.loadSound(res.."explode.wav"))
 	
 	Globals.setProperty("menuShown", false)
 	
-	Engine.getDisplay():setIcon("res://br/twister/lowrez/game/icon.png")
+	Engine.getDisplay():setIcon(res.."icon.png")
 	
 	Engine.setState("res://br/twister/lowrez/game/menu.lua")
 end

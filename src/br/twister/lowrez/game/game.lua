@@ -146,7 +146,7 @@ function game:on_start()
 	
 	self.pauseMenu = Menu:new({ "RESUME", "QUIT" })
 
-	self.map = import("res://br/twister/lowrez/game/level0.lua")
+	self.map = import("res://br/twister/lowrez/game/res/level0.lua")
 	local ly = self.map.layers[1]
 
 	self.worm = WormHead:new()
