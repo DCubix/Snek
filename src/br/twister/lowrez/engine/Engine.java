@@ -39,7 +39,14 @@ public class Engine {
 		Engine.fpsCounter = new FPSCounter((float) timeStep);
 		Engine.waitEvents = new PriorityQueue<>();
 		
-		mainloop();
+		Thread gt = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				Engine.mainloop();
+			}
+		});
+		gt.setName("LOWREZ Engine Main Thread");
+		gt.start();
 	}
 	
 	private static void mainloop() {
@@ -47,6 +54,8 @@ public class Engine {
 		double accum = 0.0;
 		
 		TinySound.init();
+		
+		Scripting.registerTypes();
 		
 		if (startupState != null) {
 			startupState.onPreLoad();

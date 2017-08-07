@@ -10,7 +10,7 @@ public class Game {
 		EngineConfig conf = new EngineConfig();
 		conf.bufferWidth = 64;
 		conf.bufferHeight = 64;
-		conf.frameCap = 30;
+		conf.frameCap = 24;
 		conf.startupState = new ScriptedStartupState("res://br/twister/lowrez/game/startup.lua");
 		conf.windowWidth = 512;
 		conf.windowHeight = 512;

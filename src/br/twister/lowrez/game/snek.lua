@@ -1,4 +1,4 @@
-local class = import("res://br/twister/lowrez/game/middleclass.lua")
+class = import("res://br/twister/lowrez/game/middleclass.lua")
 
 WormSegment = class("WormSegment")
 function WormSegment:initialize()
@@ -25,6 +25,9 @@ function WormHead:initialize()
 	self.speed = 30.0
 	self.prevPos = Point(0, 0)
 	self.dead = false
+	self.active = true
+	self.blink = true
+	self.activeTime = 0.0
 	self.lives = 3
 end
 
@@ -61,8 +64,37 @@ function WormHead:grow()
 	table.insert(self.body, part)
 end
 
+function WormHead:flash(time)
+	self.activeTime = time
+	self.active = false
+end
+
+function WormHead:damage()
+	self:flash(5.0)
+	self.lives = self.lives - 1
+	Globals.getProperty("hurtSound"):play()
+	if self.lives <= 0 then
+		self.lives = 0
+		self.dead = true
+		return true
+	end
+	return false
+end
+
 function WormHead:collided(item)
-	return Collisions.rect(item.x-4, item.y-4, 8, 8, self.position.x-4, self.position.y-4, 8, 8)
+	return Collisions.rect(item.position.x-4, item.position.y-4, 8, 8, self.position.x-4, self.position.y-4, 8, 8)
+end
+
+function WormHead:collidedAll(item)
+	if self:collided(item) then return true
+	else
+		for i, v in pairs(self.body) do
+			if Collisions.rect(item.position.x-4, item.position.y-4, 8, 8, v.position.x-4, v.position.y-4, 8, 8) then
+				return true
+			end
+		end
+	end
+	return false
 end
 
 function WormHead:hitWorm(worm)
@@ -114,21 +146,44 @@ function WormHead:update(dt, cols)
 		local b = self.body[i]
 		b:update(dt, 4, self.speed)
 	end
+	
+	if self.activeTime > 0.0 then
+		self.activeTime = self.activeTime - dt
+		self.blink = not self.blink
+	else
+		self.active = true
+		self.blink = true
+	end
 end
 
-function WormHead:render(r, wormAnim, wormSprite)
+function WormHead:render(r, wormAnim, sprite, sprite2)
 	local w = 4
 	local h = 4
 
-	-- Draw snek body
-	wormAnim:setFrame(8)
-	for i = #self.body, 1, -1 do
-		local b = self.body[i]	
-		r:drawAnimation(wormSprite, wormAnim, b.position.x-w, b.position.y-h, nil)
+	if self.blink then
+		-- Draw snek body
+		wormAnim:setFrame(8)
+		for i = #self.body, 1, -1 do
+			local b = self.body[i]	
+			r:drawAnimation(sprite, wormAnim, b.position.x-w, b.position.y-h, nil)
+		end
+		
+		-- Draw snek head
+		wormAnim:setFrame(self.direction)
+		r:drawAnimation(sprite, wormAnim, self.position.x-w, self.position.y-h, nil)
+	else
+		if sprite2 ~= nil then
+			-- Draw snek body
+			wormAnim:setFrame(8)
+			for i = #self.body, 1, -1 do
+				local b = self.body[i]	
+				r:drawAnimation(sprite2, wormAnim, b.position.x-w, b.position.y-h, nil)
+			end
+			
+			-- Draw snek head
+			wormAnim:setFrame(self.direction)
+			r:drawAnimation(sprite2, wormAnim, self.position.x-w, self.position.y-h, nil)
+		end
 	end
-	
-	-- Draw snek head
-	wormAnim:setFrame(self.direction)
-	r:drawAnimation(wormSprite, wormAnim, self.position.x-w, self.position.y-h, nil)
 end
 

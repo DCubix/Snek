@@ -1,17 +1,19 @@
 import("res://br/twister/lowrez/game/snek.lua")
+import("res://br/twister/lowrez/game/enemy.lua")
+import("res://br/twister/lowrez/game/item.lua")
+import("res://br/twister/lowrez/game/util.lua")
 import("res://br/twister/lowrez/game/menumaker.lua")
+
+local class = import("res://br/twister/lowrez/game/middleclass.lua")
 
 game.wormSprite = nil
 game.badWormSprite = nil
 game.wormAnim = nil
+game.bombAnim = Animation(8, 1, 0.02)
 game.itemSprites = {}
 game.pauseMenu = nil
 
-game.blink = false
-game.blinkTime = 0.0
-
 game.score = 0
-game.fruitsEaten = 0
 game.cameraPos = Point(0, 0)
 game.cameraTarget = Point()
 
@@ -24,7 +26,7 @@ game.textBox = {
 }
 
 game.map = {}
-game.items = {} -- { x, y, type, spr } where type = 0 -> apple, 1 -> pear, 2 -> cherry, 3 -> health -> 4 -> ?
+game.items = {} -- { x, y, type, spr }
 game.badWorms = {} -- { worm, anim, target }
 
 game.worm = nil
@@ -32,17 +34,16 @@ game.worm = nil
 game.state = 0 -- 0 = Standby; 1 = Game; 2 = Game Over; 3 = Pause
 
 function game:addBadWorm(width, height)
-	local anim = Animation(10, 1, 0.0)
-	anim:setAutomatic(false)
-	
 	local rx = math.random(2, width-2) * 8
 	local ry = math.random(2, height-2) * 8
 	
-	local worm = WormHead:new()
+	local worm = Enemy:new()
 	worm.position.x = rx
 	worm.position.y = ry
 	worm.prevPos.x = rx
 	worm.prevPos.y = ry
+	worm.burnt = false
+	worm.deadTime = 5.0
 	worm:init()
 	
 	for i = 1, #self.badWorms do
@@ -56,7 +57,7 @@ function game:addBadWorm(width, height)
 			worm:init()
 		end
 	end
-	table.insert(self.badWorms, { worm=worm, anim=anim, target=nil })
+	table.insert(self.badWorms, worm)
 end
 
 function game:addFruits(minFruits, maxFruits, width, height)
@@ -67,25 +68,38 @@ function game:addFruits(minFruits, maxFruits, width, height)
 	for i = 0, fruitCount do
 		local rx = (math.random(2, width-2) * 8)-4
 		local ry = (math.random(2, height-2) * 8)-4
-		local rt = math.random(0, 4)
-		if rt == 3 or rt == 4 then
-			for i = 0, 10 do rt = math.random(0, 4) end
+		local rt = math.random(0, 5)
+		if rt == ITEM_HEALTH or rt == ITEM_CANDY or rt == ITEM_BATTERY then
+			for i = 0, 99 do rt = math.random(0, 5) end
 		end
 		
 		local ani = nil
-		if rt < 3 then
-			ani = Animation(8, 1, 0.07)
+		if not (rt == ITEM_HEALTH or rt == ITEM_CANDY) then
+			if rt == ITEM_BATTERY then
+				ani = Animation(10, 1, 0.02)
+			else
+				ani = Animation(8, 1, 0.05)
+			end
 		end
 		
 		local rotten = false
-		if rt >= 0 and rt < 3 then
+		if table.contains({ ITEM_APPLE, ITEM_PEAR, ITEM_CHERRY }, rt) then
 			rotten = math.random(0, 8) == 8 and true or false
 		end
-		local sprName = self.itemSprites[rt+1]
+		
+		local sprName = ""
+		if rt == ITEM_APPLE then sprName = "appleSprite"
+		elseif rt == ITEM_PEAR then sprName = "pearSprite"
+		elseif rt == ITEM_CHERRY then sprName = "cherrySprite"
+		elseif rt == ITEM_BATTERY then sprName = "batterySprite"
+		elseif rt == ITEM_CANDY then sprName = "presentSprite"
+		elseif rt == ITEM_HEALTH then sprName = "healthSprite"
+		end
+		
 		if rotten then
 			sprName = sprName.."Rot"
 		end
-		table.insert(self.items, { x=rx, y=ry, spr=Globals.getProperty(sprName), anim=ani, type=rt, rot=rotten })
+		table.insert(self.items, Item:new(rx, ry, rt, Globals.getProperty(sprName), ani, rotten, -1))
 	end
 end
 
@@ -103,22 +117,23 @@ function drawTileLayer(r, layer)
 	end
 end
 
-function lerp(a, b, t)
-	return (1.0 - t) * a + b * t
-end
-
 function game:incrementScore(itemType)
 	local scoreInc = 0
-	if itemType == 0 then -- Apple
+	if itemType == ITEM_APPLE then
 		scoreInc = 1
-	elseif itemType == 1 then -- Pear
+	elseif itemType == ITEM_PEAR then
 		scoreInc = 5
-	elseif itemType == 2 then -- Cherry
+	elseif itemType == ITEM_CHERRY then
 		scoreInc = 10
-	elseif itemType== 3 then -- Health
+	elseif itemType == ITEM_HEALTH then
 		scoreInc = 0
-	elseif itemType == 4 then -- ?
-		scoreInc = self:incrementScore(math.random(0, 3))
+	elseif itemType == ITEM_CANDY then
+		local bombRand = math.random(0, 9)
+		scoreInc = 20
+		if bombRand == 9 then
+			scoreInc = 0
+			self.worm.hasBomb = true
+		end
 	end
 	return scoreInc
 end
@@ -126,16 +141,10 @@ end
 function game:on_start()
 	self.wormSprite = Globals.getProperty("wormSprite")
 	self.badWormSprite = Globals.getProperty("badWormSprite")
-	self.wormAnim = Animation(10, 1, 0.0, nil)
+	self.wormAnim = Animation(10, 1, 0.0)
 	self.wormAnim:setAutomatic(false)
 	
 	self.pauseMenu = Menu:new({ "RESUME", "QUIT" })
-	
-	table.insert(self.itemSprites, "appleSprite")
-	table.insert(self.itemSprites, "pearSprite")
-	table.insert(self.itemSprites, "cherrySprite")
-	table.insert(self.itemSprites, "healthSprite")
-	table.insert(self.itemSprites, "presentSprite")
 
 	self.map = import("res://br/twister/lowrez/game/level0.lua")
 	local ly = self.map.layers[1]
@@ -145,14 +154,16 @@ function game:on_start()
 	self.worm.position.y = ly.height * 4
 	self.worm.prevPos.x = ly.width * 4
 	self.worm.prevPos.y = ly.height * 4
+	self.worm.hasBomb = false
+	self.worm.powered = false
 	self.worm:init()
 	
 	self.cameraTarget = self.worm.position
 	
-	self:addBadWorm(ly.width, ly.height)
-	self:addBadWorm(ly.width, ly.height)
-	self:addBadWorm(ly.width, ly.height)
-	self:addBadWorm(ly.width, ly.height)
+--	self:addBadWorm(ly.width, ly.height)
+--	self:addBadWorm(ly.width, ly.height)
+--	self:addBadWorm(ly.width, ly.height)
+--	self:addBadWorm(ly.width, ly.height)
 	
 	self:addFruits(30, 30, ly.width, ly.height)
 	
@@ -164,13 +175,17 @@ function game:on_update(input, dt)
 		local layer0 = self.map.layers[1]
 		local layer3 = self.map.layers[4] -- Colliders
 		
-		if self.blinkTime > 0.0 then
-			self.blink = not self.blink
-			self.blinkTime = self.blinkTime - dt
-		end
-		
 		if #self.items < 30 then
 			self:addFruits(1, 1, layer0.width, layer0.height)
+		end
+		
+		if #self.badWorms < 4 then
+			self:addBadWorm(layer0.width, layer0.height)
+		end
+		
+		-- XXX Update items
+		for k, v in pairs(self.items) do
+			if v:update(dt, k, self.items) then break end
 		end
 		
 		-- XXX Player
@@ -179,17 +194,16 @@ function game:on_update(input, dt)
 		elseif input:keyDown(Keys.KeyRight) then
 			self.worm:turnRight(dt)
 		end
-		
+
 		-- XXX Check collisions against "fruits"
 		for i, item in pairs(self.items) do
-			if self.worm:collided(item) then
+			if self.worm:collided(item) and not table.contains({ ITEM_BOMB, ITEM_EXPLOSION }, item.type) then
 				local coll = false
-				if self.blinkTime <= 0.0 then
-					if item.rot then
-						Globals.getProperty("hurtSound"):play()
-						self.worm.lives = self.worm.lives - 1
-						self.blinkTime = 5
+				if self.worm.active then
+					if item.rotten then
+						self.worm:damage()
 						table.remove(self.items, i)
+						Globals.getProperty("hurtSound"):play()
 					else				
 						coll = true
 					end
@@ -200,10 +214,14 @@ function game:on_update(input, dt)
 				end
 				if coll then
 					self.score = self.score + self:incrementScore(item.type) * 10
-					if item.type == 3 then
+					if item.type == ITEM_HEALTH then
 						Globals.getProperty("oneUpSound"):play()
 						self.worm.lives = self.worm.lives + 1
 						if self.worm.lives >= 3 then self.worm.lives = 3 end
+					elseif item.type == ITEM_BATTERY then
+						Globals.getProperty("oneUpSound"):play()
+						self.worm.powered = true
+						self.worm:flash(5.0)
 					else
 						Globals.getProperty("pickupSound"):play()
 						self.worm:grow()
@@ -214,72 +232,25 @@ function game:on_update(input, dt)
 			end
 		end
 		
-		-- XXX Enemy <-> player collision
+		-- XXX Enemy update
 		for k, v in pairs(self.badWorms) do
-			if not v.worm.dead and self.worm:hitWorm(v.worm) and self.blinkTime <= 0.0 then
-				Globals.getProperty("hurtSound"):play()
-				self.worm.lives = self.worm.lives - 1
-				self.blinkTime = 5
+			if v.dispose then
+				table.remove(self.badWorms, k)
 				break
+			else
+				v:update(self, dt, layer3.objects, self.worm, self.items)
 			end
 		end
 
-		if self.worm.lives <= 0 then
-			self.worm.dead = true
-			self.state = 2
-			self.worm.lives = 0
-			Globals.getProperty("gameOverSound"):play()
-		end
-		
 		self.worm:update(dt, layer3.objects)
-		
-		-- XXX Enemy AI
-		for k, v in pairs(self.badWorms) do
-			if v.worm.dead then goto continue end
-			
-			-- XXX Avoid player
-			for idx, p in pairs(self.worm.body) do
-				local dist = p.position:distanceTo(v.worm.position)
-				if dist <= 10 then
-					v.worm:turnRight(dt)
-				end
+		if self.worm.powered then
+			if self.worm.activeTime <= 0.0 then
+				self.worm.powered = false
 			end
-			
-			if v.target == nil then -- XXX Pick a random target
-				if #self.items > 1 then
-					v.target = math.random(1, #self.items)
-				elseif #self.items == 1 then
-					v.target = 1
-				else
-					v.target = nil
-				end
-			else -- XXX Follow target until it hits it
-				local item = self.items[v.target]
-				if item == nil then
-					v.target = nil
-				else
-					local dir = Point(item.x, item.y):sub(v.worm.position)
-					local angle = v.worm.dir:cross(dir)
-			
-					if angle < 0 then
-						v.worm:turnLeft(dt)
-					else
-						v.worm:turnRight(dt)
-					end
-					
-					-- XXX Hits target
-					for i, item in pairs(self.items) do
-						if not v.worm:collided(item) then goto continue2 end
-						v.worm:grow()
-						table.remove(self.items, i)
-						v.target = nil
-						break
-						::continue2::
-					end
-				end
-			end
-			v.worm:update(dt, layer3.objects)
-			::continue::
+		end
+		if self.worm.dead then
+			Globals.getProperty("gameOverSound"):play()
+			self.state = 2
 		end
 		
 		-- XXX Camera
@@ -290,8 +261,14 @@ function game:on_update(input, dt)
 		if input:keyPressed(Keys.KeyP) then
 			Globals.getProperty("selectSound"):play()
 			self.state = 3
+		elseif input:keyPressed(Keys.KeySpace) then
+			if self.worm.hasBomb then
+				local pos = self.worm.body[#self.worm.body].position
+				table.insert(self.items, Bomb:new(pos.x, pos.y))
+				self.worm.hasBomb = false
+			end
 		end
-	elseif self.state == 2 then -- Game Over State	
+	elseif self.state == 2 then -- Game Over State
 		self.textBox.cursorTime = self.textBox.cursorTime + dt
 		if self.textBox.cursorTime >= 0.25 then
 			self.textBox.cursorBlink = not self.textBox.cursorBlink
@@ -369,40 +346,24 @@ function game:on_render(r)
 		drawTileLayer(r, layer0)
 		drawTileLayer(r, layer1)
 	
-		-- XXX Draw Fruits and items
-		for i = 1, #self.items do
-			local fruit = self.items[i]
-			if fruit == nil then goto continue end
-			if fruit.anim ~= nil then
-				local lf = fruit.anim:getLastFrame()
-				local iw = lf.w * fruit.spr:getWidth()
-				local ih = lf.h * fruit.spr:getHeight()
-				r:drawAnimation(fruit.spr, fruit.anim, fruit.x-iw/2, fruit.y-ih/2)
-			else
-				local iw = fruit.spr:getWidth()
-				local ih = fruit.spr:getHeight()
-				r:drawSpriteSimple(fruit.spr, fruit.x-iw/2, fruit.y-ih/2)
-			end
-			::continue::
+		-- XXX Draw items
+		for k, v in pairs(self.items) do
+			v:render(r)
 		end
 		
-		-- XXX Draw worms (sneks)
-		local deadWormSprite = Globals.getProperty("wormSkelSprite")
+		-- XXX Draw sneks
 		for k, v in pairs(self.badWorms) do
-			local spr = not v.worm.dead and self.badWormSprite or deadWormSprite
-			v.worm:render(r, v.anim, spr)
+			v:render(r)
 		end
 		
 		if not self.worm.dead then
-			if self.blinkTime > 0.0 then
-				if self.blink then
-					self.worm:render(r, self.wormAnim, self.wormSprite)
-				end
+			if self.worm.powered then
+				self.worm:render(r, self.wormAnim, Globals.getProperty("wormSprite"), Globals.getProperty("poweredWormSprite"))
 			else
-				self.worm:render(r, self.wormAnim, self.wormSprite)
+				self.worm:render(r, self.wormAnim, Globals.getProperty("wormSprite"))
 			end
 		else
-			self.worm:render(r, self.wormAnim, deadWormSprite)
+			self.worm:render(r, self.wormAnim, Globals.getProperty("wormSkelSprite"))
 		end
 		
 		-- XXX Draw the rest of the map
@@ -419,6 +380,14 @@ function game:on_render(r)
 			for i = 1, self.worm.lives do
 				r:drawSpriteSimple(Globals.getProperty("healthSprite"), hx + cx, 1 + cy)
 				hx = hx - 8
+			end
+			
+			if self.worm.hasBomb then
+				local spr = Globals.getProperty("bombSprite")
+				local tmpdo = r:getDrawOffset():clone()
+				r:setDrawOffset(Point(0, 0))
+				r:drawSprite(spr, 0, 0, 10, 10, 1, 52, 10, 10)
+				r:setDrawOffset(tmpdo)
 			end
 		elseif self.state == 3 then
 			-- XXX Draw PAUSE

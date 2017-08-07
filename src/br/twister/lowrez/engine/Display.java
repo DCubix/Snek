@@ -37,7 +37,7 @@ public class Display extends Canvas {
 		frame.pack();
 		
 		frame.setResizable(false);
-		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setTitle(title);
 		frame.setLocationRelativeTo(null);
 		frame.setBackground(Color.BLACK);

@@ -19,9 +19,12 @@ public class Scripting {
 
 	public static Globals globals;
 	static {
-		if (globals == null)
+		if (globals == null) {
 			globals = JsePlatform.standardGlobals();
+		}
 	}
+	
+	private static LuaValue renderer, input;
 	
 	public static LuaValue loadScript(String fileName) {
 		// Load Script
@@ -43,10 +46,8 @@ public class Scripting {
 				@Override
 				public LuaValue call(LuaValue arg) {
 					String fileName = arg.toString();
-					String src = FileUtils.fileToString(fileName);
 					String file = fileName.substring(fileName.lastIndexOf('/')+1, fileName.lastIndexOf('.'));
-					LuaValue val = globals.load(src, file, globals);
-					return val.call();
+					return globals.load(FileUtils.getFile(fileName), file, "bt", globals).call();
 				}
 			};
 			globals.set("import", importfun);
@@ -273,6 +274,9 @@ public class Scripting {
 			glob.set("setProperty", set_prop);
 			globals.set("Globals", glob);
 		}
+		
+		renderer = CoerceJavaToLua.coerce(Engine.getRenderer());
+		input = CoerceJavaToLua.coerce(Engine.getInput());
 	}
 	
 	public static void freeGlobals() {
@@ -280,5 +284,13 @@ public class Scripting {
 		for (int i = 0; i < dict.length(); i++) {
 			dict.set(i, LuaValue.NIL);
 		}
+	}
+
+	public static LuaValue getRenderer() {
+		return renderer;
+	}
+
+	public static LuaValue getInput() {
+		return input;
 	}
 }

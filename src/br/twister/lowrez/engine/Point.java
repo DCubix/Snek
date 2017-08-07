@@ -33,6 +33,10 @@ public class Point {
 		return d;
 	}
 	
+	public Point clone() {
+		return new Point(x, y);
+	}
+	
 	public float dot(Point b) {
 		return x * b.x + y * b.y;
 	}
