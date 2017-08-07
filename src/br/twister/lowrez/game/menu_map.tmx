@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" tiledversion="1.0.2" orientation="orthogonal" renderorder="right-down" width="8" height="8" tilewidth="8" tileheight="8" nextobjectid="1">
+ <tileset firstgid="1" source="tmap"/>
+ <layer name="Tile Layer 1" width="8" height="8">
+  <data encoding="csv">
+4,4,2,1,2,2,1,2,
+4,1,4,5,1,1,6,2,
+2,1,1,4,2,4,1,4,
+1,4,1,4,4,2,4,4,
+2,1,2,1,4,5,4,4,
+2,2,4,2,6,2,1,4,
+4,5,4,4,4,4,2,4,
+1,2,4,1,4,4,4,1
+</data>
+ </layer>
+</map>
