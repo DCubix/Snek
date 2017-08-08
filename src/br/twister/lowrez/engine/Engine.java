@@ -60,7 +60,7 @@ public class Engine {
 		if (startupState != null) {
 			startupState.onPreLoad();
 		}
-				
+
 		display.show();
 		
 		boolean canRender = false;

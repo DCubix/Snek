@@ -25,13 +25,13 @@ function Enemy:update(game, dt, cols, player, items)
 		if self:hitWorm(player) and player.powered then
 			self.dead = true
 			self.burnt = true
-			Globals.getProperty("shockSound"):play()
+			Globals.getProperty("shockSound"):play(0.5)
 			game.score = game.score + #self.body * 10
 		elseif player:hitWorm(self) then
 			if player.powered then
 				self.dead = true
 				self.burnt = true
-				Globals.getProperty("shockSound"):play()
+				Globals.getProperty("shockSound"):play(0.5)
 				game.score = game.score + #self.body * 10
 			elseif player.active then
 				player:damage()

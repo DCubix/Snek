@@ -29,6 +29,7 @@ Left/Right Arrow Keys | Control the snek;
 Up/Down Arrow Keys | Menu interaction/Scrolling through hi-scores;
 Enter | Accept selected menu option;
 P | Pause
+Space | Release Bomb
 
 ### HOW TO LAUNCH (Runtime)
 - Windows:
